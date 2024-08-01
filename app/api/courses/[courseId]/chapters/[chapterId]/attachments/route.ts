@@ -4,27 +4,27 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(
     req: NextRequest, 
-    {params}: {params: {courseId: String}}) {
+    { params }: { params: { courseId: string } }
+) {
   try {
-      const { userId } = auth();
-      
-      if (!userId) {
-          return new NextResponse("Unauthorized", { status: 401 });
-        }
-        
-        const { url } = await req.json();
+    const { userId } = auth();
+    
+    if (!userId) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+    
+    const { url } = await req.json();
 
-        const courseOwner = await db.course.findUnique({
-            where: {
-                id: params.courseId,
-                userId: userId,
-            }
-        })
+    const courseOwner = await db.course.findUnique({
+      where: {
+        id: params.courseId,
+        userId: userId,
+      }
+    });
 
-        if (!courseOwner) {
-            return new NextResponse("Unauthorized", { status: 401 });
-        }
-
+    if (!courseOwner) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
 
     const attachment = await db.attachment.create({
       data: {
