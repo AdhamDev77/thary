@@ -9,6 +9,7 @@ type Props = {
 
 const Testimonial = ({ imageUrl, opinion, name }: Props) => {
   return (
+    // kkk
     <div className="flex flex-1 flex-col items-center bg-white dark:bg-slate-800 p-6 rounded-lg shadow-lg">
       <img src={imageUrl} alt={name} className="w-28 h-28 rounded-full mb-6 " />
 
