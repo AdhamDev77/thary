@@ -7,6 +7,8 @@ import {
   Droppable,
   Draggable,
   DropResult,
+  DraggableProvided,
+  DroppableProvided,
 } from "@hello-pangea/dnd";
 import { cn } from "@/lib/utils";
 import { Grip, Pencil } from "lucide-react";
@@ -35,20 +37,20 @@ const ChaptersList = ({ items, onReorder, onEdit }: ChaptersListProps) => {
       return;
     }
 
-    const items = Array.from(chapters);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
+    const updatedItems = Array.from(chapters);
+    const [reorderedItem] = updatedItems.splice(result.source.index, 1);
+    updatedItems.splice(result.destination.index, 0, reorderedItem);
 
     const startIndex = Math.min(result.source.index, result.destination.index);
     const endIndex = Math.max(result.source.index, result.destination.index);
 
-    const updatedChapters = items.slice(startIndex, endIndex + 1);
+    const updatedChapters = updatedItems.slice(startIndex, endIndex + 1);
 
-    setChapters(items);
+    setChapters(updatedItems);
 
     const bulkUpdateData = updatedChapters.map((chapter) => ({
       id: chapter.id,
-      position: items.findIndex((item) => item.id === chapter.id),
+      position: updatedItems.findIndex((item) => item.id === chapter.id),
     }));
 
     onReorder(bulkUpdateData);
@@ -61,11 +63,11 @@ const ChaptersList = ({ items, onReorder, onEdit }: ChaptersListProps) => {
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
       <Droppable droppableId="chapters">
-        {(provided) => (
+        {(provided: DroppableProvided) => (
           <div {...provided.droppableProps} ref={provided.innerRef}>
             {chapters.map((chapter, index) => (
               <Draggable key={chapter.id} draggableId={chapter.id} index={index}>
-                {(provided) => (
+                {(provided: DraggableProvided, snapshot) => (
                   <div
                     className={cn(
                       "flex items-center gap-x-2 bg-slate-200 border-slate-200 border text-slate-700 rounded-md mb-4 text-sm",
@@ -73,6 +75,7 @@ const ChaptersList = ({ items, onReorder, onEdit }: ChaptersListProps) => {
                     )}
                     ref={provided.innerRef}
                     {...provided.draggableProps}
+                    style={provided.draggableProps.style as React.CSSProperties}
                   >
                     <div
                       className={cn(
