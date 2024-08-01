@@ -3,13 +3,14 @@ import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function DELETE(
-  req: Request,
+  req: NextRequest,  // Use NextRequest here
   { params }: { params: { courseId: string; attachmentId: string } }
 ) {
   try {
     const { userId } = auth();
 
     if (!userId) {
+      console.log('Unauthorized: No user ID');
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
@@ -22,16 +23,18 @@ export async function DELETE(
     });
 
     if (!courseOwner) {
+      console.log('Unauthorized: No course owner found');
       return new NextResponse("Unauthorized", { status: 401 });
     }
+
     // Delete the attachment
     const attachment = await db.attachment.delete({
       where: {
-        id: params.attachmentId,
-        courseId: params.courseId,
+        id: params.attachmentId, // Ensure this matches your schema
       },
     });
 
+    console.log('Attachment deleted:', attachment);
     return NextResponse.json(attachment, { status: 200 });
   } catch (error) {
     console.error("[COURSE_ID_ATTACHMENTS]", error);
