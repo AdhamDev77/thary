@@ -36,11 +36,10 @@ export async function DELETE(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    // Update the chapter in the database
+    // Check if the chapter exists
     const chapter = await db.chapter.findUnique({
       where: {
         id: params.chapterId,
-        courseId: params.courseId,
       },
     });
 
@@ -48,6 +47,7 @@ export async function DELETE(
       return new NextResponse("Chapter not found", { status: 404 });
     }
 
+    // Handle video URL deletion
     if (chapter.videoUrl) {
       const existingMuxData = await db.muxData.findFirst({
         where: {
@@ -56,7 +56,11 @@ export async function DELETE(
       });
 
       if (existingMuxData) {
-        await muxClient.video.assets.delete(existingMuxData.assetId);
+        try {
+          await muxClient.video.assets.delete(existingMuxData.assetId);
+        } catch (error) {
+          console.error("Error deleting Mux asset:", error);
+        }
         await db.muxData.delete({
           where: {
             id: existingMuxData.id,
@@ -65,15 +69,17 @@ export async function DELETE(
       }
     }
 
+    // Delete the chapter
     const deletedChapter = await db.chapter.delete({
       where: {
         id: params.chapterId,
       },
     });
 
+    // Check if there are any published chapters remaining in the course
     const publishedChaptersInCourse = await db.chapter.findMany({
       where: {
-        courseId: params.chapterId,
+        courseId: params.courseId,
         isPublished: true,
       },
     });
@@ -89,10 +95,10 @@ export async function DELETE(
       });
     }
 
-    return NextResponse.json(deletedChapter)
+    return NextResponse.json(deletedChapter);
   } catch (error) {
-    console.error("Error creating Mux asset:", error);
-    return new NextResponse("Error creating Mux asset", { status: 500 });
+    console.error("Error handling DELETE request:", error);
+    return new NextResponse("Internal Error", { status: 500 });
   }
 }
 
@@ -112,6 +118,7 @@ export async function PATCH(
     const { isPublished, ...values }: PatchRequest = await req.json();
     console.log("Request Body:", values);
 
+    // Update the chapter
     const chapter = await db.chapter.update({
       where: {
         id: params.chapterId,
@@ -119,6 +126,7 @@ export async function PATCH(
       },
       data: {
         ...values,
+        isPublished: isPublished ?? undefined, // Only update if provided
       },
     });
 
@@ -166,7 +174,7 @@ export async function PATCH(
 
     return NextResponse.json(chapter, { status: 200 });
   } catch (error) {
-    console.error("[CHAPTER_ID_PATCH]", error);
+    console.error("[CHAPTER_ID_PATCH] Error:", error);
     return new NextResponse("Internal Error", { status: 500 });
   }
 }
