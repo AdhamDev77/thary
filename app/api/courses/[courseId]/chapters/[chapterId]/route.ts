@@ -106,21 +106,12 @@ export async function PATCH(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    // Check if the user is the owner of the course
-    const courseOwner = await db.course.findFirst({
-      where: {
-        id: params.courseId,
-        userId: userId,
-      },
-    });
-    if (!courseOwner) {
-      return new NextResponse("Unauthorized", { status: 401 });
-    }
+    console.log("User ID:", userId);
+    console.log("Params:", params);
 
-    // Parse the request body
     const { isPublished, ...values }: PatchRequest = await req.json();
+    console.log("Request Body:", values);
 
-    // Update the chapter in the database
     const chapter = await db.chapter.update({
       where: {
         id: params.chapterId,
@@ -131,16 +122,16 @@ export async function PATCH(
       },
     });
 
+    console.log("Updated Chapter:", chapter);
+
     // Handle video URL changes
     if (values.videoUrl) {
-      // Check for existing Mux data
       const existingMuxData = await db.muxData.findFirst({
         where: {
           chapterId: params.chapterId,
         },
       });
 
-      // Delete existing Mux asset if it exists
       if (existingMuxData) {
         try {
           await muxClient.video.assets.delete(existingMuxData.assetId);
@@ -154,14 +145,12 @@ export async function PATCH(
         });
       }
 
-      // Create new Mux asset
       try {
         const asset = await muxClient.video.assets.create({
           input: [{ url: values.videoUrl }],
-          playback_policy: ["public"], // Ensure this is an array
+          playback_policy: ["public"],
         });
 
-        // Store Mux asset data in the database
         await db.muxData.create({
           data: {
             chapterId: params.chapterId,
@@ -175,7 +164,6 @@ export async function PATCH(
       }
     }
 
-    // Return the updated chapter
     return NextResponse.json(chapter, { status: 200 });
   } catch (error) {
     console.error("[CHAPTER_ID_PATCH]", error);
