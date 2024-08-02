@@ -8,10 +8,10 @@ const MUX_TOKEN_ID = process.env.MUX_TOKEN_ID;
 const MUX_TOKEN_SECRET = process.env.MUX_TOKEN_SECRET;
 
 if (!MUX_TOKEN_ID || !MUX_TOKEN_SECRET) {
-  throw new Error("MUX_TOKEN_ID or MUX_TOKEN_SECRET is not defined");
+  throw new Error("MUX_TOKEN_ID or MUX_TOKEN_SECRET is not defined in environment variables.");
 }
 
-// Initialize Mux client with tokenId and tokenSecret from environment variables
+// Initialize Mux client
 const muxClient = new Mux({
   tokenId: MUX_TOKEN_ID,
   tokenSecret: MUX_TOKEN_SECRET,
