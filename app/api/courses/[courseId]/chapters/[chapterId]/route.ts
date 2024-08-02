@@ -3,10 +3,18 @@ import Mux from "@mux/mux-node";
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 
+// Ensure environment variables are defined
+const MUX_TOKEN_ID = process.env.MUX_TOKEN_ID;
+const MUX_TOKEN_SECRET = process.env.MUX_TOKEN_SECRET;
+
+if (!MUX_TOKEN_ID || !MUX_TOKEN_SECRET) {
+  throw new Error("MUX_TOKEN_ID or MUX_TOKEN_SECRET is not defined");
+}
+
 // Initialize Mux client with tokenId and tokenSecret from environment variables
 const muxClient = new Mux({
-  tokenId: process.env.MUX_TOKEN_ID as string,
-  tokenSecret: process.env.MUX_TOKEN_SECRET as string,
+  tokenId: MUX_TOKEN_ID,
+  tokenSecret: MUX_TOKEN_SECRET,
 });
 
 interface PatchRequest {
@@ -112,28 +120,10 @@ export async function PATCH(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    console.log("User ID:", userId);
-    console.log("Params:", params);
+    const { isPublished, videoUrl, ...values }: PatchRequest = await req.json();
 
-    const { isPublished, ...values }: PatchRequest = await req.json();
-    console.log("Request Body:", values);
-
-    // Update the chapter
-    const chapter = await db.chapter.update({
-      where: {
-        id: params.chapterId,
-        courseId: params.courseId,
-      },
-      data: {
-        ...values,
-        isPublished: isPublished ?? undefined, // Only update if provided
-      },
-    });
-
-    console.log("Updated Chapter:", chapter);
-
-    // Handle video URL changes
-    if (values.videoUrl) {
+    // Ensure that videoUrl is defined before using it
+    if (videoUrl) {
       const existingMuxData = await db.muxData.findFirst({
         where: {
           chapterId: params.chapterId,
@@ -155,7 +145,7 @@ export async function PATCH(
 
       try {
         const asset = await muxClient.video.assets.create({
-          input: [{ url: values.videoUrl }],
+          input: [{ url: videoUrl }],
           playback_policy: ["public"],
         });
 
@@ -171,6 +161,18 @@ export async function PATCH(
         return new NextResponse("Error creating Mux asset", { status: 500 });
       }
     }
+
+    // Update the chapter
+    const chapter = await db.chapter.update({
+      where: {
+        id: params.chapterId,
+        courseId: params.courseId,
+      },
+      data: {
+        ...values,
+        isPublished: isPublished ?? undefined, // Only update if provided
+      },
+    });
 
     return NextResponse.json(chapter, { status: 200 });
   } catch (error) {
